@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Japanese Kana Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+/* ================== BASE ================== */
+:root{
+  --bg:#ffffff;
+  --fg:#111;
+  --card:#f3f4f6;
+  --accent:#2563eb;
+  --green:#16a34a;
+  --red:#dc2626;
+}
+
+body{
+  margin:0;
+  font-family:system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--fg);
+}
+
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:20px;
+  position:relative;
+}
+
+.card{
+  background:var(--card);
+  padding:20px;
+  border-radius:12px;
+  margin-bottom:16px;
+}
+
+button,input,select{
+  padding:10px;
+  font-size:16px;
+}
+
+button{
+  cursor:pointer;
+}
+
+.hidden{ display:none; }
+
+/* ================== GLOBAL BACK ================== */
+.global-back{
+  position:absolute;
+  top:16px;
+  right:16px;
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  border:1px solid #cbd5e1;
+  background:var(--card);
+  font-size:18px;
+}
+
+.global-back:hover{
+  background:var(--accent);
+  color:white;
+}
+
+/* ================== SETUP OPTIONS ================== */
+.option-group{
+  margin-top:24px;
+}
+
+.option-group-title{
+  font-weight:700;
+  font-size:16px;
+  margin-bottom:12px;
+}
+
+.option-row{
+  display:flex;
+  gap:32px;
+  align-items:center;
+}
+
+.option-row label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+}
+
+/* ================== QUIZ ================== */
+.kana{
+  font-size:96px;
+  text-align:center;
+  margin:20px 0;
+}
+
+.progress{
+  height:10px;
+  background:#cbd5e1;
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.progress-inner{
+  height:100%;
+  background:var(--accent);
+  width:0%;
+}
+
+.timer{
+  text-align:center;
+  font-weight:bold;
+  margin-top:8px;
+}
+
+.correct{ background:var(--green); color:white; }
+.wrong{ background:var(--red); color:white; }
+
+/* ================== CHART ================== */
+.chart-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(80px,1fr));
+  gap:10px;
+  margin-bottom:20px;
+}
+
+.chart-item{
+  background:#fff;
+  padding:10px;
+  border-radius:8px;
+  text-align:center;
+}
+
+.chart-char{ font-size:32px; }
+.chart-romaji{ font-size:12px; opacity:.7; }
+
+/* ================== PRINT (PDF EXPORT) ================== */
+@media print{
+  body *{ visibility:hidden; }
+  #chartPage, #chartPage *{ visibility:visible; }
+
+  #chartPage{
+    position:absolute;
+    inset:0;
+    background:white;
+  }
+
+  .global-back,
+  #exportPdfBtn{
+    display:none !important;
+  }
+
+  h2,h3{ page-break-after:avoid; }
+  .chart-grid{ page-break-inside:avoid; }
+}
+</style>
+</head>
+
+<body>
+
+<button id="globalBackBtn" class="global-back hidden" title="Back">⬅</button>
+
+<div class="app">
+
+<!-- ================== SETUP ================== -->
+<div id="setup" class="card">
+  <h2>Japanese Kana Quiz</h2>
+
+  <div class="option-group">
+    <div class="option-group-title">Script</div>
+    <div class="option-row">
+      <label><input type="checkbox" id="useHira" checked> Hiragana</label>
+      <label><input type="checkbox" id="useKata"> Katakana</label>
+    </div>
+  </div>
+
+  <div class="option-group">
+    <div class="option-group-title">Type</div>
+    <div class="option-row">
+      <label><input type="checkbox" id="useBasic" checked> Basic (46)</label>
+      <label><input type="checkbox" id="useCombined"> Combined</label>
+    </div>
+  </div>
+
+  <div class="option-group">
+    <div class="option-group-title">Mode</div>
+    <select id="mode">
+      <option value="normal">Normal</option>
+      <option value="timer">Timer</option>
+    </select>
+  </div>
+
+  <div id="timerOptions" class="hidden">
+    <select id="timePreset">
+      <option>1</option><option>2</option><option selected>3</option>
+      <option>5</option><option>8</option>
+    </select>
+    <input id="customTime" type="number" placeholder="Custom seconds">
+  </div>
+
+  <button id="startBtn">Start Quiz</button>
+  <button onclick="openChart('hiragana')">View Hiragana Chart</button>
+  <button onclick="openChart('katakana')">View Katakana Chart</button>
+</div>
+
+<!-- ================== QUIZ ================== -->
+<div id="quiz" class="card hidden">
+  <div class="progress"><div id="progress" class="progress-inner"></div></div>
+  <div id="timer" class="timer"></div>
+  <div id="kana" class="kana"></div>
+  <input id="answer" autocomplete="off" placeholder="Type romaji and press Enter">
+</div>
+
+<!-- ================== CHART PAGE ================== -->
+<div id="chartPage" class="card hidden">
+  <h2 id="chartTitle"></h2>
+  <button id="exportPdfBtn">📄 Export as PDF</button>
+
+  <h3>Basic 46</h3>
+  <div id="chartBasic" class="chart-grid"></div>
+
+  <h3>Dakuten</h3>
+  <div id="chartDakuten" class="chart-grid"></div>
+
+  <h3>Handakuten</h3>
+  <div id="chartHandakuten" class="chart-grid"></div>
+
+  <h3>Combined (Yōon)</h3>
+  <div id="chartCombined" class="chart-grid"></div>
+</div>
+
+</div>
+
+<script>
+/* ================== DATA ================== */
+const HIRA_BASIC=[["あ","a"],["い","i"],["う","u"],["え","e"],["お","o"],["か","ka"],["き","ki"],["く","ku"],["け","ke"],["こ","ko"],["さ","sa"],["し","shi"],["す","su"],["せ","se"],["そ","so"],["た","ta"],["ち","chi"],["つ","tsu"],["て","te"],["と","to"],["な","na"],["に","ni"],["ぬ","nu"],["ね","ne"],["の","no"],["は","ha"],["ひ","hi"],["ふ","fu"],["へ","he"],["ほ","ho"],["ま","ma"],["み","mi"],["む","mu"],["め","me"],["も","mo"],["や","ya"],["ゆ","yu"],["よ","yo"],["ら","ra"],["り","ri"],["る","ru"],["れ","re"],["ろ","ro"],["わ","wa"],["を","wo"],["ん","n"]];
+const KATA_BASIC=[["ア","a"],["イ","i"],["ウ","u"],["エ","e"],["オ","o"],["カ","ka"],["キ","ki"],["ク","ku"],["ケ","ke"],["コ","ko"],["サ","sa"],["シ","shi"],["ス","su"],["セ","se"],["ソ","so"],["タ","ta"],["チ","chi"],["ツ","tsu"],["テ","te"],["ト","to"],["ナ","na"],["ニ","ni"],["ヌ","nu"],["ネ","ne"],["ノ","no"],["ハ","ha"],["ヒ","hi"],["フ","fu"],["ヘ","he"],["ホ","ho"],["マ","ma"],["ミ","mi"],["ム","mu"],["メ","me"],["モ","mo"],["ヤ","ya"],["ユ","yu"],["ヨ","yo"],["ラ","ra"],["リ","ri"],["ル","ru"],["レ","re"],["ロ","ro"],["ワ","wa"],["ヲ","wo"],["ン","n"]];
+
+const HIRA_DAKUTEN=[["が","ga"],["ぎ","gi"],["ぐ","gu"],["げ","ge"],["ご","go"],["ざ","za"],["じ","ji"],["ず","zu"],["ぜ","ze"],["ぞ","zo"],["だ","da"],["ぢ","ji"],["づ","zu"],["で","de"],["ど","do"],["ば","ba"],["び","bi"],["ぶ","bu"],["べ","be"],["ぼ","bo"]];
+const KATA_DAKUTEN=[["ガ","ga"],["ギ","gi"],["グ","gu"],["ゲ","ge"],["ゴ","go"],["ザ","za"],["ジ","ji"],["ズ","zu"],["ゼ","ze"],["ゾ","zo"],["ダ","da"],["ヂ","ji"],["ヅ","zu"],["デ","de"],["ド","do"],["バ","ba"],["ビ","bi"],["ブ","bu"],["ベ","be"],["ボ","bo"]];
+
+const HIRA_HANDAKUTEN=[["ぱ","pa"],["ぴ","pi"],["ぷ","pu"],["ぺ","pe"],["ぽ","po"]];
+const KATA_HANDAKUTEN=[["パ","pa"],["ピ","pi"],["プ","pu"],["ペ","pe"],["ポ","po"]];
+
+const HIRA_COMBINED=[["きゃ","kya"],["きゅ","kyu"],["きょ","kyo"],["しゃ","sha"],["しゅ","shu"],["しょ","sho"],["ちゃ","cha"],["ちゅ","chu"],["ちょ","cho"],["にゃ","nya"],["にゅ","nyu"],["にょ","nyo"],["ひゃ","hya"],["ひゅ","hyu"],["ひょ","hyo"],["みゃ","mya"],["みゅ","myu"],["みょ","myo"],["りゃ","rya"],["りゅ","ryu"],["りょ","ryo"]];
+const KATA_COMBINED=[["キャ","kya"],["キュ","kyu"],["キョ","kyo"],["シャ","sha"],["シュ","shu"],["ショ","sho"],["チャ","cha"],["チュ","chu"],["チョ","cho"],["ニャ","nya"],["ニュ","nyu"],["ニョ","nyo"],["ヒャ","hya"],["ヒュ","hyu"],["ヒョ","hyo"],["ミャ","mya"],["ミュ","myu"],["ミョ","myo"],["リャ","rya"],["リュ","ryu"],["リョ","ryo"]];
+
+/* ================== STATE ================== */
+let pool=[],index=0,timerId=null;
+
+/* ================== MODE ================== */
+mode.onchange=()=>timerOptions.classList.toggle("hidden",mode.value!=="timer");
+
+/* ================== GLOBAL BACK ================== */
+globalBackBtn.onclick=goHome;
+
+document.addEventListener("keydown",e=>{
+  if(e.altKey && e.key==="ArrowLeft"){
+    if(!setup.classList.contains("hidden")){
+      e.preventDefault();
+      goHome();
+    }
+  }
+});
+
+function goHome(){
+  clearInterval(timerId);
+  quiz.classList.add("hidden");
+  chartPage.classList.add("hidden");
+  setup.classList.remove("hidden");
+  globalBackBtn.classList.add("hidden");
+  progress.style.width="0%";
+  timer.textContent="";
+  answer.value="";
+}
+
+/* ================== QUIZ ================== */
+startBtn.onclick=()=>{
+  pool=[];
+  if(useHira.checked && useBasic.checked) pool.push(...HIRA_BASIC);
+  if(useKata.checked && useBasic.checked) pool.push(...KATA_BASIC);
+  if(useCombined.checked){
+    if(useHira.checked) pool.push(...HIRA_COMBINED);
+    if(useKata.checked) pool.push(...KATA_COMBINED);
+  }
+  if(!pool.length) return alert("Select something");
+  pool.sort(()=>Math.random()-0.5);
+  index=0;
+  setup.classList.add("hidden");
+  quiz.classList.remove("hidden");
+  globalBackBtn.classList.remove("hidden");
+  nextKana();
+};
+
+function nextKana(){
+  kana.textContent=pool[index][0];
+  answer.value="";
+  answer.focus();
+  progress.style.width=`${(index/pool.length)*100}%`;
+  if(mode.value==="timer") startTimer();
+  else timer.textContent="";
+}
+
+function startTimer(){
+  clearInterval(timerId);
+  let t=parseInt(customTime.value||timePreset.value);
+  timer.textContent=`⏱ ${t}s`;
+  timerId=setInterval(()=>{
+    t--; timer.textContent=`⏱ ${t}s`;
+    if(t<=0){ clearInterval(timerId); submit(false); }
+  },1000);
+}
+
+answer.addEventListener("keydown",e=>{
+  if(e.key==="Enter") submit(answer.value.trim().toLowerCase()===pool[index][1]);
+});
+
+function submit(ok){
+  clearInterval(timerId);
+  answer.className=ok?"correct":"wrong";
+  setTimeout(()=>{
+    answer.className="";
+    index++;
+    index>=pool.length?goHome():nextKana();
+  },400);
+}
+
+/* ================== CHART ================== */
+function openChart(type){
+  setup.classList.add("hidden");
+  chartPage.classList.remove("hidden");
+  globalBackBtn.classList.remove("hidden");
+
+  chartTitle.textContent=type==="hiragana"?"Hiragana Chart":"Katakana Chart";
+
+  chartBasic.innerHTML=render(type==="hiragana"?HIRA_BASIC:KATA_BASIC);
+  chartDakuten.innerHTML=render(type==="hiragana"?HIRA_DAKUTEN:KATA_DAKUTEN);
+  chartHandakuten.innerHTML=render(type==="hiragana"?HIRA_HANDAKUTEN:KATA_HANDAKUTEN);
+  chartCombined.innerHTML=render(type==="hiragana"?HIRA_COMBINED:KATA_COMBINED);
+}
+
+function render(arr){
+  return arr.map(k=>`<div class="chart-item"><div class="chart-char">${k[0]}</div><div class="chart-romaji">${k[1]}</div></div>`).join("");
+}
+
+exportPdfBtn.onclick=()=>window.print();
+</script>
+</body>
+</html>

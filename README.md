@@ -23,6 +23,10 @@ This project is designed to be **stateless**, **lightweight**, and **offline-fri
 
 ---
 
+![preview-1](image.png)
+![quiz](image-1.png)
+![katakana-chart](image-2.png)
+
 ### 📊 Result & Analytics
 - Total questions attempted
 - Total correct answers

@@ -24,7 +24,7 @@ This project is designed to be **stateless**, **lightweight**, and **offline-fri
 - **Progress bar** during quiz
 - Supports retrying **only wrong answers**
 
----
+---  
 
 ### 📊 Result & Analytics
 - Total questions attempted

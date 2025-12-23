@@ -5,7 +5,10 @@ A fast, minimal, and fully client-side **Japanese Kana learning web app** focuse
 This project is designed to be **stateless**, **lightweight**, and **offline-friendly**.
 
 ---
-
+![preview-1](image.png)
+![quiz](image-1.png)
+![katakana-chart](image-2.png)
+---
 ## ✨ Features
 
 ### 🧠 Quiz System
@@ -22,10 +25,6 @@ This project is designed to be **stateless**, **lightweight**, and **offline-fri
 - Supports retrying **only wrong answers**
 
 ---
-
-![preview-1](image.png)
-![quiz](image-1.png)
-![katakana-chart](image-2.png)
 
 ### 📊 Result & Analytics
 - Total questions attempted

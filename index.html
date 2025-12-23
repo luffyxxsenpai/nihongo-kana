@@ -6,200 +6,150 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-/* ================== BASE ================== */
 :root{
-  --bg:#ffffff;
+  --bg:#fff;
   --fg:#111;
   --card:#f3f4f6;
   --accent:#2563eb;
   --green:#16a34a;
   --red:#dc2626;
 }
-
 body{
   margin:0;
   font-family:system-ui,sans-serif;
   background:var(--bg);
   color:var(--fg);
 }
-
 .app{
   max-width:900px;
   margin:auto;
   padding:20px;
-  position:relative;
 }
-
 .card{
   background:var(--card);
   padding:20px;
   border-radius:12px;
   margin-bottom:16px;
 }
+.hidden{display:none}
 
-button,input,select{
+button,input{
   padding:10px;
   font-size:16px;
 }
+button{cursor:pointer}
 
-button{
-  cursor:pointer;
-}
-
-.hidden{ display:none; }
-
-/* ================== GLOBAL BACK ================== */
-.global-back{
-  position:absolute;
-  top:16px;
-  right:16px;
-  width:40px;
-  height:40px;
-  border-radius:50%;
-  border:1px solid #cbd5e1;
-  background:var(--card);
-  font-size:18px;
-}
-
-.global-back:hover{
-  background:var(--accent);
-  color:white;
-}
-
-/* ================== SETUP OPTIONS ================== */
-.option-group{
-  margin-top:24px;
-}
-
-.option-group-title{
-  font-weight:700;
-  font-size:16px;
-  margin-bottom:12px;
-}
-
+.option-group{margin-top:20px}
+.option-title{font-weight:700;margin-bottom:8px}
 .option-row{
   display:flex;
-  gap:32px;
+  gap:12px;
+  flex-wrap:wrap;
   align-items:center;
 }
+.small{font-size:13px;opacity:.75}
 
-.option-row label{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  cursor:pointer;
-}
-
-/* ================== QUIZ ================== */
 .kana{
   font-size:96px;
   text-align:center;
   margin:20px 0;
 }
 
-.progress{
+#answer{
+  width:100%;
+  max-width:420px;
+  margin:14px auto 0;
+  display:block;
+  background:#fff;
+  border:2px solid #cbd5e1;
+  border-radius:10px;
+  padding:14px 16px;
+  font-size:18px;
+  text-align:center;
+}
+#answer.correct{background:var(--green);color:#fff}
+#answer.wrong{background:var(--red);color:#fff}
+
+/* progress bar */
+.progress-wrap{
+  width:100%;
   height:10px;
-  background:#cbd5e1;
+  background:#e5e7eb;
   border-radius:8px;
   overflow:hidden;
+  margin-bottom:16px;
 }
-
-.progress-inner{
+#progressBar{
   height:100%;
-  background:var(--accent);
   width:0%;
+  background:var(--accent);
+  transition:width .25s ease;
 }
 
-.timer{
-  text-align:center;
-  font-weight:bold;
-  margin-top:8px;
-}
-
-.correct{ background:var(--green); color:white; }
-.wrong{ background:var(--red); color:white; }
-
-/* ================== CHART ================== */
+/* chart */
 .chart-grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(80px,1fr));
-  gap:10px;
-  margin-bottom:20px;
+  gap:12px;
 }
-
 .chart-item{
   background:#fff;
   padding:10px;
   border-radius:8px;
   text-align:center;
 }
+.chart-char{font-size:32px}
+.chart-romaji{font-size:12px;opacity:.7}
 
-.chart-char{ font-size:32px; }
-.chart-romaji{ font-size:12px; opacity:.7; }
+/* nav */
+#navBar{
+  position:fixed;
+  top:12px;
+  left:12px;
+  display:flex;
+  gap:10px;
+  z-index:1000;
+}
+#navBar button{
+  padding:8px 12px;
+  font-size:16px;
+  border-radius:8px;
+  border:1px solid #cbd5e1;
+  background:var(--card);
+}
+#navBar button:hover{
+  background:var(--accent);
+  color:#fff;
+}
 
-/* ================== PRINT (PDF EXPORT) ================== */
+/* print (PDF export) */
 @media print{
-  body *{ visibility:hidden; }
-  #chartPage, #chartPage *{ visibility:visible; }
-
+  body *{visibility:hidden}
+  #chartPage, #chartPage *{visibility:visible}
   #chartPage{
     position:absolute;
-    inset:0;
-    background:white;
+    left:0;top:0;width:100%;
   }
-
-  .global-back,
-  #exportPdfBtn{
-    display:none !important;
-  }
-
-  h2,h3{ page-break-after:avoid; }
-  .chart-grid{ page-break-inside:avoid; }
+  #navBar, button{display:none!important}
 }
 </style>
 </head>
 
 <body>
 
-<button id="globalBackBtn" class="global-back hidden" title="Back">⬅</button>
+<div id="navBar">
+  <button id="homeBtn">🏠</button>
+  <button id="backBtn" class="hidden">⬅</button>
+</div>
 
 <div class="app">
 
-<!-- ================== SETUP ================== -->
+<!-- SETUP -->
 <div id="setup" class="card">
-  <h2 class="title">
-  JLPT Kana Quiz
-  <a
-    href="https://github.com/luffyxxsenpai/nihongo-kana.git"
-    target="_blank"
-    class="github-link"
-    aria-label="GitHub repository"
-  >
-    <svg
-      viewBox="0 0 16 16"
-      width="20"
-      height="20"
-      aria-hidden="true"
-    >
-      <path
-        fill="currentColor"
-        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
-           0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
-           -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87
-           2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95
-           0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21
-           2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27
-           1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12
-           .51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95
-           .29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2
-           0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z">
-      </path>
-    </svg>
-  </a>
-</h2>
+  <h2>Japanese Kana Quiz</h2>
 
   <div class="option-group">
-    <div class="option-group-title">Script</div>
+    <div class="option-title">Script</div>
     <div class="option-row">
       <label><input type="checkbox" id="useHira" checked> Hiragana</label>
       <label><input type="checkbox" id="useKata"> Katakana</label>
@@ -207,120 +157,199 @@ button{
   </div>
 
   <div class="option-group">
-    <div class="option-group-title">Type</div>
+    <div class="option-title">Type</div>
     <div class="option-row">
-      <label><input type="checkbox" id="useBasic" checked> Basic (46)</label>
-      <label><input type="checkbox" id="useCombined"> Combined</label>
+      <label><input type="checkbox" id="useBasic" checked> Basic</label>
+      <label><input type="checkbox" id="useDakuten"> Dakuten / Handakuten</label>
+      <label><input type="checkbox" id="useCombined"> Yōon</label>
     </div>
+    <div id="typeCountPreview" class="small"></div>
   </div>
 
-  <div class="option-group">
-    <div class="option-group-title">Mode</div>
-    <select id="mode">
-      <option value="normal">Normal</option>
-      <option value="timer">Timer</option>
-    </select>
+  <div class="option-row" style="margin-top:24px">
+    <button id="startBtn">Start Quiz</button>
+    <button onclick="openChart('hiragana')">Hiragana Chart</button>
+    <button onclick="openChart('katakana')">Katakana Chart</button>
   </div>
-
-  <div id="timerOptions" class="hidden">
-    <select id="timePreset">
-      <option>1</option><option>2</option><option selected>3</option>
-      <option>5</option><option>8</option>
-    </select>
-    <input id="customTime" type="number" placeholder="Custom seconds">
-  </div>
-
-  <button id="startBtn">Start Quiz</button>
-  <button onclick="openChart('hiragana')">View Hiragana Chart</button>
-  <button onclick="openChart('katakana')">View Katakana Chart</button>
 </div>
 
-<!-- ================== QUIZ ================== -->
+<!-- QUIZ -->
 <div id="quiz" class="card hidden">
-  <div class="progress"><div id="progress" class="progress-inner"></div></div>
-  <div id="timer" class="timer"></div>
+  <div class="progress-wrap"><div id="progressBar"></div></div>
   <div id="kana" class="kana"></div>
   <input id="answer" autocomplete="off" placeholder="Type romaji and press Enter">
 </div>
 
-<!-- ================== CHART PAGE ================== -->
+<!-- RESULT -->
+<div id="resultPage" class="card hidden">
+  <h3>Result</h3>
+  <p>Total: <span id="resTotal"></span></p>
+  <p>Correct: <span id="resCorrect"></span></p>
+  <p>Accuracy: <span id="resAccuracy"></span>%</p>
+
+  <h4>Accuracy by Type</h4>
+  <ul>
+    <li>Basic: <span id="accBasic">-</span>%</li>
+    <li>Dakuten: <span id="accDakuten">-</span>%</li>
+    <li>Yōon: <span id="accYoon">-</span>%</li>
+  </ul>
+
+  <h4>Wrong Answers</h4>
+  <div id="wrongPreview" class="chart-grid"></div>
+
+  <button onclick="restartQuiz()">Restart</button>
+  <button id="retryWrongBtn" onclick="retryWrong()">Retry Wrong Only</button>
+</div>
+
+<!-- CHART -->
 <div id="chartPage" class="card hidden">
   <h2 id="chartTitle"></h2>
-  <button id="exportPdfBtn">📄 Export as PDF</button>
+  <div style="margin-bottom:12px">
+    <button onclick="exportChartPDF()">Export to PDF</button>
+  </div>
 
-  <h3>Basic 46</h3>
-  <div id="chartBasic" class="chart-grid"></div>
-
-  <h3>Dakuten</h3>
-  <div id="chartDakuten" class="chart-grid"></div>
-
-  <h3>Handakuten</h3>
-  <div id="chartHandakuten" class="chart-grid"></div>
-
-  <h3>Combined (Yōon)</h3>
-  <div id="chartCombined" class="chart-grid"></div>
+  <h3>Basic</h3><div id="chartBasic" class="chart-grid"></div>
+  <h3>Dakuten</h3><div id="chartDakuten" class="chart-grid"></div>
+  <h3>Handakuten</h3><div id="chartHandakuten" class="chart-grid"></div>
+  <h3>Yōon</h3><div id="chartCombined" class="chart-grid"></div>
 </div>
 
 </div>
 
 <script>
-/* ================== DATA ================== */
-const HIRA_BASIC=[["あ","a"],["い","i"],["う","u"],["え","e"],["お","o"],["か","ka"],["き","ki"],["く","ku"],["け","ke"],["こ","ko"],["さ","sa"],["し","shi"],["す","su"],["せ","se"],["そ","so"],["た","ta"],["ち","chi"],["つ","tsu"],["て","te"],["と","to"],["な","na"],["に","ni"],["ぬ","nu"],["ね","ne"],["の","no"],["は","ha"],["ひ","hi"],["ふ","fu"],["へ","he"],["ほ","ho"],["ま","ma"],["み","mi"],["む","mu"],["め","me"],["も","mo"],["や","ya"],["ゆ","yu"],["よ","yo"],["ら","ra"],["り","ri"],["る","ru"],["れ","re"],["ろ","ro"],["わ","wa"],["を","wo"],["ん","n"]];
-const KATA_BASIC=[["ア","a"],["イ","i"],["ウ","u"],["エ","e"],["オ","o"],["カ","ka"],["キ","ki"],["ク","ku"],["ケ","ke"],["コ","ko"],["サ","sa"],["シ","shi"],["ス","su"],["セ","se"],["ソ","so"],["タ","ta"],["チ","chi"],["ツ","tsu"],["テ","te"],["ト","to"],["ナ","na"],["ニ","ni"],["ヌ","nu"],["ネ","ne"],["ノ","no"],["ハ","ha"],["ヒ","hi"],["フ","fu"],["ヘ","he"],["ホ","ho"],["マ","ma"],["ミ","mi"],["ム","mu"],["メ","me"],["モ","mo"],["ヤ","ya"],["ユ","yu"],["ヨ","yo"],["ラ","ra"],["リ","ri"],["ル","ru"],["レ","re"],["ロ","ro"],["ワ","wa"],["ヲ","wo"],["ン","n"]];
+/* ================= DATASETS  ================= */
 
-const HIRA_DAKUTEN=[["が","ga"],["ぎ","gi"],["ぐ","gu"],["げ","ge"],["ご","go"],["ざ","za"],["じ","ji"],["ず","zu"],["ぜ","ze"],["ぞ","zo"],["だ","da"],["ぢ","ji"],["づ","zu"],["で","de"],["ど","do"],["ば","ba"],["び","bi"],["ぶ","bu"],["べ","be"],["ぼ","bo"]];
-const KATA_DAKUTEN=[["ガ","ga"],["ギ","gi"],["グ","gu"],["ゲ","ge"],["ゴ","go"],["ザ","za"],["ジ","ji"],["ズ","zu"],["ゼ","ze"],["ゾ","zo"],["ダ","da"],["ヂ","ji"],["ヅ","zu"],["デ","de"],["ド","do"],["バ","ba"],["ビ","bi"],["ブ","bu"],["ベ","be"],["ボ","bo"]];
 
-const HIRA_HANDAKUTEN=[["ぱ","pa"],["ぴ","pi"],["ぷ","pu"],["ぺ","pe"],["ぽ","po"]];
-const KATA_HANDAKUTEN=[["パ","pa"],["ピ","pi"],["プ","pu"],["ペ","pe"],["ポ","po"]];
+const HIRA_BASIC = [
+ ["あ","a"],["い","i"],["う","u"],["え","e"],["お","o"],
+ ["か","ka"],["き","ki"],["く","ku"],["け","ke"],["こ","ko"],
+ ["さ","sa"],["し","shi"],["す","su"],["せ","se"],["そ","so"],
+ ["た","ta"],["ち","chi"],["つ","tsu"],["て","te"],["と","to"],
+ ["な","na"],["に","ni"],["ぬ","nu"],["ね","ne"],["の","no"],
+ ["は","ha"],["ひ","hi"],["ふ","fu"],["へ","he"],["ほ","ho"],
+ ["ま","ma"],["み","mi"],["む","mu"],["め","me"],["も","mo"],
+ ["や","ya"],["ゆ","yu"],["よ","yo"],
+ ["ら","ra"],["り","ri"],["る","ru"],["れ","re"],["ろ","ro"],
+ ["わ","wa"],["を","wo"],["ん","n"]
+];
 
-const HIRA_COMBINED=[["きゃ","kya"],["きゅ","kyu"],["きょ","kyo"],["しゃ","sha"],["しゅ","shu"],["しょ","sho"],["ちゃ","cha"],["ちゅ","chu"],["ちょ","cho"],["にゃ","nya"],["にゅ","nyu"],["にょ","nyo"],["ひゃ","hya"],["ひゅ","hyu"],["ひょ","hyo"],["みゃ","mya"],["みゅ","myu"],["みょ","myo"],["りゃ","rya"],["りゅ","ryu"],["りょ","ryo"]];
-const KATA_COMBINED=[["キャ","kya"],["キュ","kyu"],["キョ","kyo"],["シャ","sha"],["シュ","shu"],["ショ","sho"],["チャ","cha"],["チュ","chu"],["チョ","cho"],["ニャ","nya"],["ニュ","nyu"],["ニョ","nyo"],["ヒャ","hya"],["ヒュ","hyu"],["ヒョ","hyo"],["ミャ","mya"],["ミュ","myu"],["ミョ","myo"],["リャ","rya"],["リュ","ryu"],["リョ","ryo"]];
+const KATA_BASIC = [
+ ["ア","a"],["イ","i"],["ウ","u"],["エ","e"],["オ","o"],
+ ["カ","ka"],["キ","ki"],["ク","ku"],["ケ","ke"],["コ","ko"],
+ ["サ","sa"],["シ","shi"],["ス","su"],["セ","se"],["ソ","so"],
+ ["タ","ta"],["チ","chi"],["ツ","tsu"],["テ","te"],["ト","to"],
+ ["ナ","na"],["ニ","ni"],["ヌ","nu"],["ネ","ne"],["ノ","no"],
+ ["ハ","ha"],["ヒ","hi"],["フ","fu"],["ヘ","he"],["ホ","ho"],
+ ["マ","ma"],["ミ","mi"],["ム","mu"],["メ","me"],["モ","mo"],
+ ["ヤ","ya"],["ユ","yu"],["ヨ","yo"],
+ ["ラ","ra"],["リ","ri"],["ル","ru"],["レ","re"],["ロ","ro"],
+ ["ワ","wa"],["ヲ","wo"],["ン","n"]
+];
 
-/* ================== STATE ================== */
-let pool=[],index=0,timerId=null;
+const HIRA_DAKUTEN = [
+ ["が","ga"],["ぎ","gi"],["ぐ","gu"],["げ","ge"],["ご","go"],
+ ["ざ","za"],["じ","ji"],["ず","zu"],["ぜ","ze"],["ぞ","zo"],
+ ["だ","da"],["ぢ","ji"],["づ","zu"],["で","de"],["ど","do"],
+ ["ば","ba"],["び","bi"],["ぶ","bu"],["べ","be"],["ぼ","bo"]
+];
 
-/* ================== MODE ================== */
-mode.onchange=()=>timerOptions.classList.toggle("hidden",mode.value!=="timer");
+const HIRA_HANDAKUTEN = [
+ ["ぱ","pa"],["ぴ","pi"],["ぷ","pu"],["ぺ","pe"],["ぽ","po"]
+];
 
-/* ================== GLOBAL BACK ================== */
-globalBackBtn.onclick=goHome;
+const KATA_DAKUTEN = [
+ ["ガ","ga"],["ギ","gi"],["グ","gu"],["ゲ","ge"],["ゴ","go"],
+ ["ザ","za"],["ジ","ji"],["ズ","zu"],["ゼ","ze"],["ゾ","zo"],
+ ["ダ","da"],["ヂ","ji"],["ヅ","zu"],["デ","de"],["ド","do"],
+ ["バ","ba"],["ビ","bi"],["ブ","bu"],["ベ","be"],["ボ","bo"]
+];
 
-document.addEventListener("keydown",e=>{
-  if(e.altKey && e.key==="ArrowLeft"){
-    if(!setup.classList.contains("hidden")){
-      e.preventDefault();
-      goHome();
-    }
+const KATA_HANDAKUTEN = [
+ ["パ","pa"],["ピ","pi"],["プ","pu"],["ペ","pe"],["ポ","po"]
+];
+
+const HIRA_COMBINED = [
+ ["きゃ","kya"],["きゅ","kyu"],["きょ","kyo"],
+ ["しゃ","sha"],["しゅ","shu"],["しょ","sho"],
+ ["ちゃ","cha"],["ちゅ","chu"],["ちょ","cho"],
+ ["にゃ","nya"],["にゅ","nyu"],["にょ","nyo"],
+ ["ひゃ","hya"],["ひゅ","hyu"],["ひょ","hyo"],
+ ["みゃ","mya"],["みゅ","myu"],["みょ","myo"],
+ ["りゃ","rya"],["りゅ","ryu"],["りょ","ryo"],
+ ["ぎゃ","gya"],["ぎゅ","gyu"],["ぎょ","gyo"],
+ ["じゃ","ja"],["じゅ","ju"],["じょ","jo"],
+ ["びゃ","bya"],["びゅ","byu"],["びょ","byo"],
+ ["ぴゃ","pya"],["ぴゅ","pyu"],["ぴょ","pyo"]
+];
+
+const KATA_COMBINED = [
+ ["キャ","kya"],["キュ","kyu"],["キョ","kyo"],
+ ["シャ","sha"],["シュ","shu"],["ショ","sho"],
+ ["チャ","cha"],["チュ","chu"],["チョ","cho"],
+ ["ニャ","nya"],["ニュ","nyu"],["ニョ","nyo"],
+ ["ヒャ","hya"],["ヒュ","hyu"],["ヒョ","hyo"],
+ ["ミャ","mya"],["ミュ","myu"],["ミョ","myo"],
+ ["リャ","rya"],["リュ","ryu"],["リョ","ryo"],
+ ["ギャ","gya"],["ギュ","gyu"],["ギョ","gyo"],
+ ["ジャ","ja"],["ジュ","ju"],["ジョ","jo"],
+ ["ビャ","bya"],["ビュ","byu"],["ビョ","byo"],
+ ["ピャ","pya"],["ピュ","pyu"],["ピョ","pyo"]
+];
+/* ================= STATE ================= */
+let currentView="setup";
+let pool=[],index=0;
+let correctCount=0;
+let wrongAnswers=[];
+let stats={basic:{t:0,c:0},dakuten:{t:0,c:0},yoon:{t:0,c:0}};
+
+/* ================= COUNT PREVIEW ================= */
+function updateTypeCountPreview(){
+  let b=0,d=0,y=0;
+  if(useBasic.checked){
+    if(useHira.checked) b+=HIRA_BASIC.length;
+    if(useKata.checked) b+=KATA_BASIC.length;
   }
-});
-
-function goHome(){
-  clearInterval(timerId);
-  quiz.classList.add("hidden");
-  chartPage.classList.add("hidden");
-  setup.classList.remove("hidden");
-  globalBackBtn.classList.add("hidden");
-  progress.style.width="0%";
-  timer.textContent="";
-  answer.value="";
+  if(useDakuten.checked){
+    if(useHira.checked) d+=HIRA_DAKUTEN.length+HIRA_HANDAKUTEN.length;
+    if(useKata.checked) d+=KATA_DAKUTEN.length+KATA_HANDAKUTEN.length;
+  }
+  if(useCombined.checked){
+    if(useHira.checked) y+=HIRA_COMBINED.length;
+    if(useKata.checked) y+=KATA_COMBINED.length;
+  }
+  typeCountPreview.innerHTML=
+    `Basic: <b>${b}</b> | Dakuten/Handakuten: <b>${d}</b> | Yōon: <b>${y}</b> | Total: <b>${b+d+y}</b>`;
 }
+[useHira,useKata,useBasic,useDakuten,useCombined]
+  .forEach(e=>e.onchange=updateTypeCountPreview);
+updateTypeCountPreview();
 
-/* ================== QUIZ ================== */
+/* ================= QUIZ ================= */
 startBtn.onclick=()=>{
-  pool=[];
-  if(useHira.checked && useBasic.checked) pool.push(...HIRA_BASIC);
-  if(useKata.checked && useBasic.checked) pool.push(...KATA_BASIC);
+  currentView="quiz";
+  backBtn.classList.remove("hidden");
+
+  pool=[];index=0;correctCount=0;wrongAnswers=[];
+  stats={basic:{t:0,c:0},dakuten:{t:0,c:0},yoon:{t:0,c:0}};
+  progressBar.style.width="0%";
+
+  if(useBasic.checked){
+    if(useHira.checked) pool.push(...HIRA_BASIC);
+    if(useKata.checked) pool.push(...KATA_BASIC);
+  }
+  if(useDakuten.checked){
+    if(useHira.checked) pool.push(...HIRA_DAKUTEN,...HIRA_HANDAKUTEN);
+    if(useKata.checked) pool.push(...KATA_DAKUTEN,...KATA_HANDAKUTEN);
+  }
   if(useCombined.checked){
     if(useHira.checked) pool.push(...HIRA_COMBINED);
     if(useKata.checked) pool.push(...KATA_COMBINED);
   }
-  if(!pool.length) return alert("Select something");
+  if(!pool.length) return alert("Select at least one option");
+
   pool.sort(()=>Math.random()-0.5);
-  index=0;
   setup.classList.add("hidden");
   quiz.classList.remove("hidden");
-  globalBackBtn.classList.remove("hidden");
   nextKana();
 };
 
@@ -328,54 +357,121 @@ function nextKana(){
   kana.textContent=pool[index][0];
   answer.value="";
   answer.focus();
-  progress.style.width=`${(index/pool.length)*100}%`;
-  if(mode.value==="timer") startTimer();
-  else timer.textContent="";
+  progressBar.style.width=`${(index/pool.length)*100}%`;
 }
 
-function startTimer(){
-  clearInterval(timerId);
-  let t=parseInt(customTime.value||timePreset.value);
-  timer.textContent=`⏱ ${t}s`;
-  timerId=setInterval(()=>{
-    t--; timer.textContent=`⏱ ${t}s`;
-    if(t<=0){ clearInterval(timerId); submit(false); }
-  },1000);
+answer.onkeydown=e=>{
+  if(e.key==="Enter"){
+    const cur=pool[index];
+    const ok=answer.value.trim().toLowerCase()===cur[1];
+
+    let type="basic";
+    if(HIRA_DAKUTEN.includes(cur)||HIRA_HANDAKUTEN.includes(cur)
+    ||KATA_DAKUTEN.includes(cur)||KATA_HANDAKUTEN.includes(cur)) type="dakuten";
+    else if(HIRA_COMBINED.includes(cur)||KATA_COMBINED.includes(cur)) type="yoon";
+
+    stats[type].t++;
+    if(ok){correctCount++;stats[type].c++;}
+    else if(!wrongAnswers.includes(cur)) wrongAnswers.push(cur);
+
+    answer.className=ok?"correct":"wrong";
+    setTimeout(()=>{
+      answer.className="";
+      index++;
+      index>=pool.length?showResult():nextKana();
+    },250);
+  }
+};
+
+/* ================= RESULT ================= */
+function showResult(){
+  currentView="result";
+  backBtn.classList.remove("hidden");
+
+  quiz.classList.add("hidden");
+  resultPage.classList.remove("hidden");
+
+  resTotal.textContent=pool.length;
+  resCorrect.textContent=correctCount;
+  resAccuracy.textContent=Math.round(correctCount/pool.length*100);
+
+  accBasic.textContent=stats.basic.t?Math.round(stats.basic.c/stats.basic.t*100):"-";
+  accDakuten.textContent=stats.dakuten.t?Math.round(stats.dakuten.c/stats.dakuten.t*100):"-";
+  accYoon.textContent=stats.yoon.t?Math.round(stats.yoon.c/stats.yoon.t*100):"-";
+
+  wrongPreview.innerHTML=wrongAnswers.length
+    ? wrongAnswers.map(k=>`
+      <div class="chart-item">
+        <div class="chart-char">${k[0]}</div>
+        <div class="chart-romaji">${k[1]}</div>
+      </div>`).join("")
+    : `<div style="opacity:.7">None 🎉</div>`;
+
+  retryWrongBtn.disabled=!wrongAnswers.length;
+  progressBar.style.width="100%";
 }
 
-answer.addEventListener("keydown",e=>{
-  if(e.key==="Enter") submit(answer.value.trim().toLowerCase()===pool[index][1]);
+function restartQuiz(){ goHome(); }
+
+/* retry wrong only */
+function retryWrong(){
+  if(!wrongAnswers.length) return;
+
+  pool=[...wrongAnswers];
+  index=0;correctCount=0;wrongAnswers=[];
+  stats={basic:{t:0,c:0},dakuten:{t:0,c:0},yoon:{t:0,c:0}};
+  progressBar.style.width="0%";
+
+  resultPage.classList.add("hidden");
+  quiz.classList.remove("hidden");
+  currentView="quiz";
+  nextKana();
+}
+
+/* ================= NAV ================= */
+function goHome(){
+  setup.classList.remove("hidden");
+  quiz.classList.add("hidden");
+  chartPage.classList.add("hidden");
+  resultPage.classList.add("hidden");
+  backBtn.classList.add("hidden");
+  currentView="setup";
+}
+backBtn.onclick=()=>{
+  if(currentView==="quiz" && !confirm("Exit quiz and lose progress?")) return;
+  goHome();
+};
+homeBtn.onclick=backBtn.onclick;
+document.addEventListener("keydown",e=>{
+  if(e.altKey&&e.key==="ArrowLeft") backBtn.click();
 });
 
-function submit(ok){
-  clearInterval(timerId);
-  answer.className=ok?"correct":"wrong";
-  setTimeout(()=>{
-    answer.className="";
-    index++;
-    index>=pool.length?goHome():nextKana();
-  },400);
-}
-
-/* ================== CHART ================== */
+/* ================= CHART ================= */
 function openChart(type){
+  currentView="chart";
+  backBtn.classList.remove("hidden");
+
   setup.classList.add("hidden");
   chartPage.classList.remove("hidden");
-  globalBackBtn.classList.remove("hidden");
 
   chartTitle.textContent=type==="hiragana"?"Hiragana Chart":"Katakana Chart";
-
   chartBasic.innerHTML=render(type==="hiragana"?HIRA_BASIC:KATA_BASIC);
   chartDakuten.innerHTML=render(type==="hiragana"?HIRA_DAKUTEN:KATA_DAKUTEN);
   chartHandakuten.innerHTML=render(type==="hiragana"?HIRA_HANDAKUTEN:KATA_HANDAKUTEN);
   chartCombined.innerHTML=render(type==="hiragana"?HIRA_COMBINED:KATA_COMBINED);
 }
-
 function render(arr){
-  return arr.map(k=>`<div class="chart-item"><div class="chart-char">${k[0]}</div><div class="chart-romaji">${k[1]}</div></div>`).join("");
+  return arr.map(k=>`
+    <div class="chart-item">
+      <div class="chart-char">${k[0]}</div>
+      <div class="chart-romaji">${k[1]}</div>
+    </div>`).join("");
 }
 
-exportPdfBtn.onclick=()=>window.print();
+/* export chart */
+function exportChartPDF(){
+  window.print();
+}
 </script>
 </body>
 </html>
